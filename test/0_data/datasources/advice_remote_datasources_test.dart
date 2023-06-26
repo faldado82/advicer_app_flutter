@@ -1,5 +1,6 @@
 //gracias al paquete test en dev_dependencies podemos hacer el test
 import 'package:advicer/0_data/datasources/advice_remote_datasource.dart';
+import 'package:advicer/0_data/datasources/exceptions/exceptions.dart';
 import 'package:advicer/0_data/models/advice_models.dart';
 import 'package:http/http.dart';
 import 'package:mockito/annotations.dart';
@@ -37,6 +38,38 @@ void main() {
       });
     },
   );
+
+  group('should throw', () {
+    test('a ServerException when Client respoonse was not 200', () {
+      final mockClient = MockClient();
+      final adviceRemoteDatasourceUnderTest =
+          AdviceRemoteDataSourceImpl(client: mockClient);
+
+      when(mockClient.get(
+        Uri.parse('https://api.flutter-community.com/api/v1/advice'),
+        headers: {'content-type': 'application/json'},
+      )).thenAnswer((realInvocation) => Future.value(Response('', 201)));
+
+      expect(() => adviceRemoteDatasourceUnderTest.getRandomAdviceFromAPI(),
+          throwsA(isA<ServerException>));
+    });
+
+    test('a Type Error when Client response was 200 and has not valid data',
+        () {
+      final mockClient = MockClient();
+      final adviceRemoteDatasourceUnderTest =
+          AdviceRemoteDataSourceImpl(client: mockClient);
+      const responseBody = '{"advice": "test advice"}';
+
+      when(mockClient.get(
+        Uri.parse('https://api.flutter-community.com/api/v1/advice'),
+        headers: {'content-type': 'application/json'},
+      )).thenAnswer((realInvocation) => Future.value(Response(responseBody, 200)));
+
+      expect(() => adviceRemoteDatasourceUnderTest.getRandomAdviceFromAPI(),
+          throwsA(isA<TypeError>));
+    });
+  });
 }
 
 /*
